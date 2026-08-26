@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>명일방주 스피드 퀴즈 // OPERATOR FILE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Black+Han+Sans&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0c12;
+    --panel: #12161f;
+    --panel-2: #191f2b;
+    --line: #2a3242;
+    --text: #e8ecf4;
+    --text-dim: #7c8698;
+    --amber: #ff8a1e;
+    --amber-dim: #a85f18;
+    --steel: #4c6b8a;
+    --danger: #ff4655;
+    --success: #3ddc97;
+    --mono: 'Chakra Petch', 'JetBrains Mono', 'Courier New', monospace;
+    --display: 'Black Han Sans', 'Chakra Petch', sans-serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+  }
+  *{ box-sizing: border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 3px);
+  }
+  .device{
+    width:100%;
+    max-width:460px;
+  }
+  .topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-family: var(--mono);
+    font-size:11px;
+    letter-spacing:0.12em;
+    color: var(--text-dim);
+    padding:0 4px 10px;
+    text-transform:uppercase;
+  }
+  .topbar .dot{
+    display:inline-block;
+    width:6px; height:6px;
+    background: var(--amber);
+    border-radius:50%;
+    margin-right:6px;
+    box-shadow:0 0 8px var(--amber);
+  }
+  .card{
+    background: var(--panel);
+    border:1px solid var(--line);
+    position:relative;
+    padding:28px 24px 24px;
+    clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+    overflow:hidden;
+  }
+  .card::before{
+    content:"";
+    position:absolute; top:0; left:0; right:0; height:2px;
+    background: linear-gradient(90deg, transparent, var(--amber), transparent);
+    animation: sweep 3.5s linear infinite;
+  }
+  @keyframes sweep{
+    0%{ transform: translateX(-100%); }
+    100%{ transform: translateX(100%); }
+  }
+  h1{
+    font-family: var(--mono);
+    font-size:20px;
+    letter-spacing:0.02em;
+    margin-bottom:6px;
+  }
+  h1 span{ color: var(--amber); }
+  .sub{
+    color: var(--text-dim);
+    font-size:13px;
+    line-height:1.6;
+    margin-bottom:22px;
+  }
+  .field{
+    margin-bottom:18px;
+  }
+  .field-label{
+    font-family: var(--mono);
+    font-size:11px;
+    letter-spacing:0.1em;
+    color: var(--steel);
+    text-transform:uppercase;
+    margin-bottom:8px;
+    display:block;
+  }
+  .chip-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .chip{
+    font-family: var(--mono);
+    font-size:12px;
+    padding:7px 12px;
+    border:1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--text-dim);
+    cursor:pointer;
+    user-select:none;
+    transition: all .15s ease;
+  }
+  .chip.active{
+    border-color: var(--amber);
+    color: var(--amber);
+    background: rgba(255,138,30,0.08);
+  }
+  .btn{
+    font-family: var(--mono);
+    font-size:14px;
+    letter-spacing:0.05em;
+    padding:14px 18px;
+    border:none;
+    cursor:pointer;
+    width:100%;
+    text-transform:uppercase;
+    transition: filter .15s ease, transform .05s ease;
+  }
+  .btn:active{ transform: scale(0.98); }
+  .btn-primary{
+    background: var(--amber);
+    color:#1a0f00;
+    font-weight:700;
+  }
+  .btn-primary:hover{ filter:brightness(1.08); }
+  .btn-row{ display:flex; gap:10px; margin-top:8px; }
+  .btn-correct{ background: var(--success); color:#04241a; font-weight:700; }
+  .btn-skip{ background: var(--panel-2); color: var(--text-dim); border:1px solid var(--line); }
+  .btn-skip:hover{ color: var(--text); border-color: var(--steel); }
+
+  /* game screen */
+  .hud{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    margin-bottom:18px;
+  }
+  .timer{
+    font-family: var(--mono);
+    font-size:46px;
+    font-weight:700;
+    line-height:1;
+    color: var(--amber);
+  }
+  .timer.warn{ color: var(--danger); animation: pulse 0.9s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+  .score{
+    text-align:right;
+    font-family: var(--mono);
+    font-size:12px;
+    color: var(--text-dim);
+  }
+  .score b{ color: var(--text); font-size:16px; }
+  .score .progress{
+    display:block;
+    font-size:10px;
+    color: var(--text-dim);
+    margin-top:2px;
+  }
+
+  .opfile{
+    border:1px solid var(--line);
+    background: var(--panel-2);
+    padding:20px;
+    margin-bottom:18px;
+    animation: reveal .28s ease;
+  }
+  @keyframes reveal{
+    from{ opacity:0; transform: translateY(6px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+  .opfile .tagline{
+    font-family: var(--mono);
+    font-size:10px;
+    letter-spacing:0.15em;
+    color: var(--steel);
+    text-transform:uppercase;
+    margin-bottom:10px;
+  }
+  .op-visual{
+    width:100%;
+    aspect-ratio: 4 / 5;
+    margin-bottom:16px;
+    position:relative;
+    background: linear-gradient(160deg, #1b2130, #0d1017);
+    border:1px solid var(--line);
+    overflow:hidden;
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  }
+  .op-visual img{
+    width:100%; height:100%;
+    object-fit: contain;
+    object-position: center center;
+    display:block;
+    animation: reveal .3s ease;
+  }
+  .op-visual .placeholder{
+    position:absolute; inset:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+  }
+  .op-visual .placeholder .initial{
+    font-family: var(--mono);
+    font-size:40px;
+    font-weight:700;
+    color: var(--line);
+    letter-spacing:0.05em;
+  }
+  .op-visual .placeholder svg{
+    width:36px; height:36px;
+    stroke: var(--steel);
+    fill:none;
+    stroke-width:1.4;
+    opacity:0.75;
+  }
+  .op-visual .corner-tag{
+    position:absolute;
+    top:8px; left:8px;
+    font-family: var(--mono);
+    font-size:9px;
+    letter-spacing:0.1em;
+    color: var(--text-dim);
+    background: rgba(10,12,18,0.75);
+    padding:2px 6px;
+    text-transform:uppercase;
+    z-index:2;
+  }
+  .opfile .name{
+    font-family: var(--display);
+    font-size:26px;
+    font-weight:400;
+    margin-bottom:14px;
+  }
+  .taglist{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+  }
+  .tag{
+    font-family: var(--mono);
+    font-size:11px;
+    padding:4px 9px;
+    border:1px solid var(--line);
+    color: var(--text-dim);
+  }
+  .tag.rarity{ color: var(--amber); border-color: var(--amber-dim); }
+
+  .hint{
+    color: var(--text-dim);
+    font-size:12px;
+    line-height:1.6;
+    margin-bottom:16px;
+  }
+
+  /* result screen */
+  .result-score{
+    font-family: var(--mono);
+    text-align:center;
+    margin-bottom:20px;
+  }
+  .result-score .n{
+    font-size:52px;
+    font-weight:700;
+    color: var(--amber);
+    line-height:1;
+  }
+  .result-score .l{
+    font-size:11px;
+    letter-spacing:0.15em;
+    color: var(--text-dim);
+    text-transform:uppercase;
+  }
+  .list-title{
+    font-family: var(--mono);
+    font-size:11px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    margin: 16px 0 8px;
+  }
+  .list-title.ok{ color: var(--success); }
+  .list-title.skip{ color: var(--text-dim); }
+  .list-items{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-bottom:6px;
+  }
+  .list-items span{
+    font-size:12px;
+    padding:5px 10px;
+    background: var(--panel-2);
+    border:1px solid var(--line);
+  }
+  .empty{ color: var(--text-dim); font-size:12px; }
+
+  .screen{ display:none; }
+  .screen.active{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="device">
+  <div class="topbar"><span><span class="dot"></span>ARKNIGHTS SPEED QUIZ</span><span id="clock-label">STANDBY</span></div>
+
+  <!-- 시작 화면 -->
+  <div class="card screen active" id="screen-start">
+    <h1>명일방주 <span>스피드 퀴즈</span></h1>
+    <p class="sub">
+      한 명은 화면에 뜬 오퍼레이터 정보를 보고 이름을 말하지 않고 설명해요.<br>
+      다른 한 명은 그 설명만 듣고 이름을 맞혀요. 제한시간 안에, 정해진 문제 수만큼!
+    </p>
+
+    <div class="field">
+      <label class="field-label">총 문제 수</label>
+      <div class="chip-row" id="count-chips">
+        <div class="chip" data-count="20">20문제</div>
+        <div class="chip active" data-count="30">30문제</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">제한시간</label>
+      <div class="chip-row" id="time-chips">
+        <div class="chip" data-time="30">30초</div>
+        <div class="chip active" data-time="45">45초</div>
+        <div class="chip" data-time="60">60초</div>
+        <div class="chip" data-time="90">90초</div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="btn-start">게임 시작</button>
+  </div>
+
+  <!-- 게임 화면 -->
+  <div class="card screen" id="screen-game">
+    <div class="hud">
+      <div class="timer" id="timer">45</div>
+      <div class="score">현재 점수<br><b id="score-live">0</b><span class="progress" id="progress-live"></span></div>
+    </div>
+
+    <div class="opfile" id="opfile">
+      <div class="tagline">OPERATOR FILE // CLASSIFIED</div>
+      <div class="op-visual" id="op-visual"></div>
+      <div class="name" id="op-name">-</div>
+      <div class="taglist" id="op-tags"></div>
+    </div>
+
+    <p class="hint">※ 이름을 그대로 말하면 안 돼요! 클래스·소속·특징으로 설명해보세요.</p>
+
+    <div class="btn-row">
+      <button class="btn btn-skip" id="btn-skip">스킵</button>
+      <button class="btn btn-correct" id="btn-correct">정답!</button>
+    </div>
+  </div>
+
+  <!-- 결과 화면 -->
+  <div class="card screen" id="screen-result">
+    <div class="result-score">
+      <div class="n" id="final-score">0</div>
+      <div class="l">Correct Answers</div>
+    </div>
+
+    <div class="list-title ok">맞힌 오퍼레이터</div>
+    <div class="list-items" id="list-correct"></div>
+
+    <div class="list-title skip">스킵한 오퍼레이터</div>
+    <div class="list-items" id="list-skip"></div>
+
+    <button class="btn btn-primary" id="btn-replay" style="margin-top:20px;">다시하기</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   1. 캐릭터 데이터
+   - 소량 샘플입니다. 배열에 객체만 추가하면 캐릭터가 늘어나요.
+   - 이미지는 이 html 파일과 같은 폴더에 assets 폴더를 만들고
+     "캐릭터 이름.png" 로 저장해두면 자동으로 연결됩니다.
+     예) assets/실버애쉬.png, assets/텍사스.jpg 등
+     png/jpg/webp 순서로 자동 시도하고, 없으면 placeholder로 대체돼요.
+   ========================================================= */
+const IMAGE_FOLDER = "assets";
+const IMAGE_EXTENSIONS = ["png", "jpg", "webp"];
+
+const OPERATORS = [
+  { name:"실버애쉬", class:"가드", faction:"쉐라그", rarity:6, tags:["귀족", "카잘리크"] },
+  { name:"엑시아", class:"스나이퍼", faction:"라테라노", rarity:6, tags:["신성 감사관", "속사"] },
+  { name:"텍사스", class:"뱅가드", faction:"콜롬비아", rarity:5, tags:["늑대 수인", "펭귄 물류"] },
+  { name:"첸", class:"가드", faction:"용문", rarity:6, tags:["용문 경비국", "검사"] },
+  { name:"에이야퍄들라", class:"캐스터", faction:"라인 연구소", rarity:6, tags:["화산학자", "단일 캐스터"] },
+  { name:"수르트", class:"가드", faction:"사르카즈", rarity:6, tags:["결핍성 기억장애", "마법형"] },
+  { name:"스카디", class:"가드", faction:"에기르", rarity:6, tags:["드레드노트", "돌진"] },
+  { name:"블레이즈", class:"스페셜리스트", faction:"빅토리아", rarity:6, tags:["로도스 아일랜드 정예", "폭발"] },
+  { name:"니어", class:"가드", faction:"카시미어", rarity:5, tags:["사도", "치유"] },
+  { name:"프로스트리프", class:"가드", faction:"우르수스", rarity:4, tags:["용병 출신", "감속"] },
+  { name:"안젤리나", class:"서포터", faction:"시라쿠사", rarity:6, tags:["전달자", "감속"] },
+  { name:"스즈란", class:"서포터", faction:"시라쿠사", rarity:6, tags:["여우 수인", "9개 꼬리"] },
+  { name:"사리아", class:"디펜더", faction:"라인 연구소", rarity:6, tags:["방위부서 주임", "광역 지원"] },
+  { name:"라플란드", class:"가드", faction:"시라쿠사", rarity:5, tags:["살루초 패밀리", "단독 작전"] },
+  { name:"백파이프", class:"뱅가드", faction:"빅토리아", rarity:6, tags:["로열 가드 스쿨", "킬 뱅가드"] },
+  { name:"쏜즈", class:"가드", faction:"이베리아", rarity:6, tags:["원거리 가드", "중독"] },
+  { name:"호시구마", class:"디펜더", faction:"용문", rarity:6, tags:["용문 근위국", "특별감찰팀장"] },
+  { name:"나이팅게일", class:"메딕", faction:"사르카즈", rarity:6, tags:["사도", "마법 저항"] },
+
+  /* ↓ 스토리 핵심 인물 */
+  { name:"아미야", class:"캐스터", faction:"로도스 아일랜드", rarity:5, tags:["로도스 대표", "감염자"] },
+  { name:"스와이어", class:"가드", faction:"로도스 아일랜드", rarity:5, tags:["정보관", "부채"] },
+
+  /* ↓ 최근 한정/통상/콜라보 6성 & 밈·화제성 오퍼레이터 */
+  { name:"슈", class:"디펜더", faction:"염국", rarity:6, tags:["농업천사", "천사부"] },
+  { name:"위", class:"디펜더", faction:"염국", rarity:6, tags:["요리사"] },
+  { name:"왕", class:"스페셜리스트", faction:"염국", rarity:6, tags:["함정술사", "전 군사 고문"] },
+  { name:"첸 더 던스트릭", class:"가드", faction:"용문", rarity:6, tags:["첸 알터", "아츠 파이터"] },
+  { name:"엑시아 더 뉴 커버넌트", class:"스페셜리스트", faction:"라테라노", rarity:6, tags:["엑시아 알터"] },
+  { name:"르무엔", class:"스나이퍼", faction:"라테라노", rarity:6, tags:["데드아이"] },
+  { name:"피아메타", class:"스나이퍼", faction:"라테라노", rarity:6, tags:["공증소 특파원"] },
+];
+
+/* 클래스별 추상 아이콘 (공식 아이콘을 따라 그리지 않은 자체 디자인) */
+const CLASS_ICONS = {
+  "가드":     '<svg viewBox="0 0 24 24"><path d="M4 20 L20 4 M14 4 h6 v6"/></svg>',
+  "스나이퍼": '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2 v4 M12 18 v4 M2 12 h4 M18 12 h4"/></svg>',
+  "뱅가드":   '<svg viewBox="0 0 24 24"><path d="M4 12 L18 12 M12 6 L18 12 L12 18"/></svg>',
+  "캐스터":   '<svg viewBox="0 0 24 24"><path d="M12 2 L21 8 V16 L12 22 L3 16 V8 Z"/><circle cx="12" cy="12" r="2"/></svg>',
+  "메딕":     '<svg viewBox="0 0 24 24"><path d="M12 4 v16 M4 12 h16"/></svg>',
+  "디펜더":   '<svg viewBox="0 0 24 24"><path d="M12 2 L20 6 V12 C20 17 16.5 20.5 12 22 C7.5 20.5 4 17 4 12 V6 Z"/></svg>',
+  "스페셜리스트": '<svg viewBox="0 0 24 24"><path d="M12 2 L15 9 L22 12 L15 15 L12 22 L9 15 L2 12 L9 9 Z"/></svg>',
+  "서포터":   '<svg viewBox="0 0 24 24"><path d="M12 3 L21 12 L12 21 L3 12 Z M12 8 L16 12 L12 16 L8 12 Z"/></svg>',
+};
+
+/* =========================================================
+   2. 상태값 (게임 진행 중 계속 바뀌는 값들)
+   ========================================================= */
+let totalQuestions = 30;
+let roundSeconds = 45;
+let timeLeft = roundSeconds;
+let timerId = null;
+let deck = [];
+let current = null;
+let score = 0;
+let answeredCount = 0;
+let correctList = [];
+let skipList = [];
+
+/* =========================================================
+   3. 화면 요소 참조
+   ========================================================= */
+const screens = {
+  start: document.getElementById('screen-start'),
+  game: document.getElementById('screen-game'),
+  result: document.getElementById('screen-result'),
+};
+const clockLabel = document.getElementById('clock-label');
+const countChipsEl = document.getElementById('count-chips');
+const timeChipsEl = document.getElementById('time-chips');
+const timerEl = document.getElementById('timer');
+const scoreLiveEl = document.getElementById('score-live');
+const progressLiveEl = document.getElementById('progress-live');
+const opNameEl = document.getElementById('op-name');
+const opTagsEl = document.getElementById('op-tags');
+const finalScoreEl = document.getElementById('final-score');
+const listCorrectEl = document.getElementById('list-correct');
+const listSkipEl = document.getElementById('list-skip');
+
+/* 문제 수 칩 클릭 */
+countChipsEl.querySelectorAll('.chip').forEach(chip=>{
+  chip.onclick = () => {
+    countChipsEl.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    totalQuestions = parseInt(chip.dataset.count, 10);
+  };
+});
+
+/* 시간 칩 클릭 */
+timeChipsEl.querySelectorAll('.chip').forEach(chip=>{
+  chip.onclick = () => {
+    timeChipsEl.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    roundSeconds = parseInt(chip.dataset.time, 10);
+  };
+});
+
+/* =========================================================
+   4. 화면 전환 함수
+   ========================================================= */
+function showScreen(name){
+  Object.values(screens).forEach(s => s.classList.remove('active'));
+  screens[name].classList.add('active');
+}
+
+/* Fisher-Yates 셔플 */
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* =========================================================
+   5. 게임 시작
+   ========================================================= */
+document.getElementById('btn-start').onclick = () => {
+  if(OPERATORS.length === 0){ alert('오퍼레이터 데이터가 비어있어요.'); return; }
+
+  deck = shuffle(OPERATORS).slice(0, totalQuestions);
+  score = 0;
+  answeredCount = 0;
+  correctList = [];
+  skipList = [];
+  timeLeft = roundSeconds;
+
+  showScreen('game');
+  clockLabel.textContent = 'IN PROGRESS';
+  updateTimerDisplay();
+  nextOperator();
+
+  timerId = setInterval(() => {
+    timeLeft--;
+    updateTimerDisplay();
+    if(timeLeft <= 0){
+      endGame();
+    }
+  }, 1000);
+};
+
+function updateTimerDisplay(){
+  timerEl.textContent = timeLeft;
+  timerEl.classList.toggle('warn', timeLeft <= 10);
+  scoreLiveEl.textContent = score;
+  progressLiveEl.textContent = `문제 ${Math.min(answeredCount + 1, totalQuestions)} / ${totalQuestions}`;
+}
+
+function nextOperator(){
+  if(deck.length === 0){
+    endGame();
+    return;
+  }
+  current = deck.pop();
+  opNameEl.textContent = current.name;
+  opTagsEl.innerHTML = '';
+  renderVisual(current);
+
+  const rarityTag = document.createElement('div');
+  rarityTag.className = 'tag rarity';
+  rarityTag.textContent = current.rarity + '★';
+  opTagsEl.appendChild(rarityTag);
+
+  const classTag = document.createElement('div');
+  classTag.className = 'tag';
+  classTag.textContent = current.class;
+  opTagsEl.appendChild(classTag);
+
+  const factionTag = document.createElement('div');
+  factionTag.className = 'tag';
+  factionTag.textContent = current.faction;
+  opTagsEl.appendChild(factionTag);
+
+  current.tags.forEach(t => {
+    const el = document.createElement('div');
+    el.className = 'tag';
+    el.textContent = t;
+    opTagsEl.appendChild(el);
+  });
+
+  // 카드 재생 애니메이션 재시작
+  const opfile = document.getElementById('opfile');
+  opfile.style.animation = 'none';
+  void opfile.offsetWidth;
+  opfile.style.animation = '';
+}
+
+/* 이름 기반으로 png → jpg → webp 순서로 이미지를 시도하고,
+   띄어쓰기가 있는 이름은 "이름 그대로"와 "밑줄(_)로 바꾼 버전"을 모두 시도한 뒤,
+   전부 없으면 클래스 아이콘 placeholder를 보여줌 */
+function renderVisual(op){
+  const visual = document.getElementById('op-visual');
+  visual.innerHTML = '';
+
+  const tag = document.createElement('span');
+  tag.className = 'corner-tag';
+  tag.textContent = 'SEARCHING...';
+  visual.appendChild(tag);
+
+  const img = document.createElement('img');
+  img.alt = '';
+  visual.appendChild(img);
+
+  const nameVariants = [op.name, op.name.replace(/ /g, '_')];
+  const candidates = [];
+  nameVariants.forEach(n => {
+    IMAGE_EXTENSIONS.forEach(ext => candidates.push(`${IMAGE_FOLDER}/${n}.${ext}`));
+  });
+
+  let idx = 0;
+  function tryNext(){
+    if(idx >= candidates.length){
+      img.remove();
+      tag.textContent = 'NO SIGNAL';
+      visual.appendChild(placeholderNode(op));
+      return;
+    }
+    img.src = candidates[idx];
+    idx++;
+  }
+  img.onload = () => { tag.textContent = 'OPERATOR FILE'; };
+  img.onerror = tryNext;
+  tryNext();
+}
+
+function placeholderNode(op){
+  const div = document.createElement('div');
+  div.className = 'placeholder';
+  div.innerHTML = (CLASS_ICONS[op.class] || '') + `<div class="initial">${op.name.slice(0,1)}</div>`;
+  return div;
+}
+
+document.getElementById('btn-correct').onclick = () => {
+  score++;
+  answeredCount++;
+  correctList.push(current.name);
+  nextOperator();
+  updateTimerDisplay();
+};
+
+document.getElementById('btn-skip').onclick = () => {
+  answeredCount++;
+  skipList.push(current.name);
+  nextOperator();
+  updateTimerDisplay();
+};
+
+/* =========================================================
+   6. 게임 종료 & 결과
+   ========================================================= */
+function endGame(){
+  clearInterval(timerId);
+  clockLabel.textContent = 'STANDBY';
+  finalScoreEl.textContent = score;
+
+  listCorrectEl.innerHTML = '';
+  if(correctList.length === 0){
+    listCorrectEl.innerHTML = '<span class="empty">없음</span>';
+  } else {
+    correctList.forEach(n=>{
+      const s = document.createElement('span');
+      s.textContent = n;
+      listCorrectEl.appendChild(s);
+    });
+  }
+
+  listSkipEl.innerHTML = '';
+  if(skipList.length === 0){
+    listSkipEl.innerHTML = '<span class="empty">없음</span>';
+  } else {
+    skipList.forEach(n=>{
+      const s = document.createElement('span');
+      s.textContent = n;
+      listSkipEl.appendChild(s);
+    });
+  }
+
+  showScreen('result');
+}
+
+document.getElementById('btn-replay').onclick = () => {
+  showScreen('start');
+};
+</script>
+</body>
+</html>
